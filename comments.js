@@ -1,56 +1,46 @@
-//create web server
-const express = require('express');
-const app = express();
-const path = require('path');
-const fs = require('fs');
+// Create web server and listen on port 3000
+// Load the express library
+var express = require('express');
+var app = express();
+var bodyParser = require('body-parser');
+var fs = require('fs');
 
-app.use(express.json());
+// Load the comments.json file
+var comments = require('./comments.json');
 
-//get comments
-app.get('/comments', (req, res) => {
-    fs.readFile('comments.json', 'utf8', (err, data) => {
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Route for the root page
+app.get('/', function (req, res) {
+    res.send('Hello World!');
+});
+
+// Route for the comments page
+app.get('/comments', function (req, res) {
+    res.json(comments);
+});
+
+// Route for adding a new comment
+app.post('/comments', function (req, res) {
+    var newComment = {
+        id: comments.length + 1,
+        name: req.body.name,
+        comment: req.body.comment
+    };
+
+    comments.push(newComment);
+
+    fs.writeFile('./comments.json', JSON.stringify(comments), function (err) {
         if (err) {
-            res.status(500).send('Error reading comments.json');
-            return;
+            console.log(err);
         }
-
-        const comments = JSON.parse(data);
-        res.send(comments);
     });
+
+    res.json(newComment);
 });
 
-//post comments
-app.post('/comments', (req, res) => {
-    const comment = req.body;
-    if (!comment.author || !comment.text) {
-        res.status(400).send('Author and text are required');
-        return;
-    }
-
-    fs.readFile('comments.json', 'utf8', (err, data) => {
-        if (err) {
-            res.status(500).send('Error reading comments.json');
-            return;
-        }
-
-        const comments = JSON.parse(data);
-        comments.push(comment);
-
-        fs.writeFile('comments.json', JSON.stringify(comments, null, 2), (err) => {
-            if (err) {
-                res.status(500).send('Error writing comments.json');
-                return;
-            }
-
-            res.send(comment);
-        });
-    });
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.listen(3000, () => {
-    console.log('Server started on http://localhost:3000');
+// Start the server and listen on port 3000
+app.listen(3000, function () {
+    console.log('Server is running on http://localhost:3000');
 });
